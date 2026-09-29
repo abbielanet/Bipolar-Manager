@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#fceef3" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Mood Manager" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon-180.png" />
+  <title>Bipolar Mood Manager</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    :root{
+      --bg:#fff8fb;
+      --card:#fffdfd;
+      --text:#472c36;
+      --muted:#8d6d79;
+      --accent:#d9829b;
+      --accent-dark:#b9607a;
+      --accent-soft:#f9dfe8;
+      --accent-pale:#fceef3;
+      --border:#f0d5df;
+      --success:#6f9f82;
+      --danger:#b75f70;
+      --shadow:0 6px 24px rgba(172, 96, 122, .10);
+      --radius:20px;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:linear-gradient(180deg,#fff8fb 0%,#fdf2f6 100%);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif}
+    body{padding-bottom:94px}
+    button,input,textarea,select{font:inherit}
+    .app-shell{max-width:860px;margin:0 auto;padding:18px 16px 34px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+    h1{font-size:28px;margin:0}
+    h2{font-size:20px;margin:0 0 14px}
+    h3{font-size:16px;margin:0 0 10px}
+    p{line-height:1.45}
+    .muted{color:var(--muted)}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+    .row{display:flex;gap:12px;align-items:center}
+    .between{justify-content:space-between}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .field{margin-bottom:16px}
+    label{display:block;font-weight:650;margin-bottom:7px}
+    input[type="date"],input[type="time"],input[type="text"],input[type="number"],textarea{
+      width:100%;border:1px solid var(--border);border-radius:14px;padding:12px 13px;background:#fffafb;color:var(--text);outline:none
+    }
+    textarea{min-height:105px;resize:vertical}
+    input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+    input[type="range"]{width:100%;accent-color:var(--accent-dark)}
+    .slider-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+    .value-pill{background:var(--accent-soft);color:var(--accent-dark);font-weight:700;padding:5px 10px;border-radius:999px}
+    .scale-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;margin-top:4px}
+    .btn{border:0;border-radius:14px;padding:12px 15px;font-weight:700;cursor:pointer}
+    .btn-primary{background:var(--accent);color:white}
+    .btn-secondary{background:var(--accent-soft);color:var(--accent-dark)}
+    .btn-danger{background:#f8e0e5;color:var(--danger)}
+    .btn-block{width:100%}
+    .segmented{display:flex;gap:6px;background:var(--accent-pale);padding:5px;border-radius:14px;overflow:auto}
+    .segmented button{flex:1;white-space:nowrap;border:0;background:transparent;color:var(--muted);padding:8px 10px;border-radius:10px;font-weight:650}
+    .segmented button.active{background:white;color:var(--accent-dark);box-shadow:0 2px 8px rgba(172,96,122,.12)}
+    .toggle-row{display:flex;gap:8px}
+    .toggle-row button{flex:1}
+    .tag-wrap{display:flex;flex-wrap:wrap;gap:8px}
+    .tag{border:1px solid var(--border);background:#fff9fb;color:var(--muted);padding:8px 11px;border-radius:999px;font-weight:650}
+    .tag.selected{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-dark)}
+    .nav{position:fixed;left:0;right:0;bottom:0;background:rgba(255,250,252,.95);backdrop-filter:blur(14px);border-top:1px solid var(--border);display:flex;justify-content:center;z-index:10}
+    .nav-inner{width:100%;max-width:860px;display:grid;grid-template-columns:repeat(4,1fr);padding:7px 8px calc(7px + env(safe-area-inset-bottom))}
+    .nav button{border:0;background:transparent;color:var(--muted);padding:8px 2px;font-size:12px;font-weight:650}
+    .nav button.active{color:var(--accent-dark)}
+    .nav-icon{display:block;font-size:21px;margin-bottom:2px}
+    .screen{display:none}
+    .screen.active{display:block}
+    .stat{padding:12px;border-radius:16px;background:var(--accent-pale)}
+    .stat strong{display:block;font-size:22px;color:var(--accent-dark)}
+    .history-item{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border);border-radius:15px;padding:12px;margin-bottom:9px;background:#fffafb}
+    .mood-dot{width:14px;height:14px;border-radius:50%;display:inline-block;margin-right:8px}
+    .chart-card canvas{max-height:280px}
+    .med-item{display:flex;justify-content:space-between;gap:10px;align-items:center;border:1px solid var(--border);border-radius:14px;padding:11px;margin-bottom:8px}
+    .small{font-size:13px}
+    .empty{text-align:center;color:var(--muted);padding:22px 10px}
+    .notice{background:#fff0f5;border:1px solid #f3ceda;color:#7c4d5d;border-radius:14px;padding:11px 12px;font-size:13px;margin-bottom:14px}
+    @media(max-width:560px){.grid2{grid-template-columns:1fr}.app-shell{padding-top:14px}h1{font-size:25px}}
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <header>
+    <div>
+      <h1>🌷 Mood Manager</h1>
+      <div class="muted small">Daily bipolar symptom & routine tracker</div>
+    </div>
+  </header>
+
+  <section id="today" class="screen active">
+    <div class="card">
+      <div class="row between">
+        <h2>Daily Entry</h2>
+        <input id="entryDate" type="date" style="width:auto;max-width:175px">
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Bedtime</label>
+          <input id="bedtime" type="time">
+        </div>
+        <div class="field">
+          <label>Wake time</label>
+          <input id="wakeTime" type="time">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Hours slept</label>
+        <div id="sleepDisplay" class="stat"><strong>—</strong><span class="muted small">Enter bedtime and wake time</span></div>
+      </div>
+
+      <div class="field">
+        <div class="slider-head"><label style="margin:0">Most depressive moment</label><span id="depVal" class="value-pill">0</span></div>
+        <input id="depression" type="range" min="0" max="10" step="1" value="0">
+        <div class="scale-labels"><span>0 None</span><span>10 Severe</span></div>
+      </div>
+
+      <div class="field">
+        <div class="slider-head"><label style="margin:0">Most hypomanic/manic moment</label><span id="maniaVal" class="value-pill">0</span></div>
+        <input id="mania" type="range" min="0" max="10" step="1" value="0">
+        <div class="scale-labels"><span>0 None</span><span>10 Severe</span></div>
+      </div>
+
+      <div class="field">
+        <div class="slider-head"><label style="margin:0">Overall mood</label><span id="moodVal" class="value-pill">0</span></div>
+        <input id="mood" type="range" min="-10" max="10" step="1" value="0">
+        <div class="scale-labels"><span>-10 Depressed</span><span>0 Balanced</span><span>+10 Elevated</span></div>
+      </div>
+
+      <div class="field">
+        <label>Medication</label>
+        <div id="medicationToggles"></div>
+        <div id="noMedsNote" class="muted small">Add medication in Settings.</div>
+      </div>
+
+      <div class="field">
+        <label>Tags</label>
+        <div id="tagWrap" class="tag-wrap"></div>
+      </div>
+
+      <div class="field">
+        <label>Notes</label>
+        <textarea id="notes" placeholder="Anything you want to remember about today…"></textarea>
+      </div>
+
+      <button id="saveEntry" class="btn btn-primary btn-block">Save Entry</button>
+      <button id="deleteEntry" class="btn btn-danger btn-block" style="margin-top:8px;display:none">Delete This Entry</button>
+    </div>
+  </section>
+
+  <section id="history" class="screen">
+    <div class="card">
+      <h2>History</h2>
+      <p class="muted small">Tap any day to view or edit it. You can also choose a missing date from the Today screen and add it.</p>
+      <div id="historyList"></div>
+    </div>
+  </section>
+
+  <section id="dashboard" class="screen">
+    <div class="card">
+      <div class="row between">
+        <h2>Dashboard</h2>
+      </div>
+      <div id="rangeTabs" class="segmented">
+        <button data-range="7" class="active">1 week</button>
+        <button data-range="14">2 weeks</button>
+        <button data-range="30">1 month</button>
+        <button data-range="90">3 months</button>
+        <button data-range="all">All</button>
+      </div>
+    </div>
+
+    <div class="card chart-card"><h3>Overall view</h3><canvas id="overallChart"></canvas></div>
+    <div class="card chart-card"><h3>Overall mood</h3><canvas id="moodChart"></canvas></div>
+    <div class="card chart-card"><h3>Depression</h3><canvas id="depressionChart"></canvas></div>
+    <div class="card chart-card"><h3>Hypomania / Mania</h3><canvas id="maniaChart"></canvas></div>
+    <div class="card chart-card"><h3>Sleep duration</h3><canvas id="sleepChart"></canvas></div>
+    <div class="card chart-card"><h3>Bedtime</h3><canvas id="bedtimeChart"></canvas></div>
+    <div class="card chart-card"><h3>Wake time</h3><canvas id="wakeChart"></canvas></div>
+    <div class="card chart-card"><h3>Medication adherence</h3><canvas id="medChart"></canvas></div>
+  </section>
+
+  <section id="settings" class="screen">
+    <div class="card">
+      <h2>Medications</h2>
+      <div class="grid2">
+        <div class="field">
+          <label>Medication name</label>
+          <input id="medName" type="text" placeholder="e.g. Lamotrigine">
+        </div>
+        <div class="field">
+          <label>Dose</label>
+          <input id="medDose" type="text" placeholder="e.g. 200 mg">
+        </div>
+      </div>
+      <button id="addMedication" class="btn btn-secondary btn-block">Add Medication</button>
+      <div id="medList" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Data & Backup</h2>
+      <div class="notice">Your entries are stored locally in this browser on this device. GitHub only hosts the app files, not your personal entries.</div>
+      <button id="exportJson" class="btn btn-secondary btn-block">Export Backup (.json)</button>
+      <button id="exportCsv" class="btn btn-secondary btn-block" style="margin-top:8px">Export Spreadsheet (.csv)</button>
+      <label class="btn btn-secondary btn-block" style="margin-top:8px;text-align:center;display:block">
+        Import Backup
+        <input id="importJson" type="file" accept=".json,application/json" hidden>
+      </label>
+    </div>
+  </section>
+</div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <button data-screen="today" class="active"><span class="nav-icon">✍️</span>Today</button>
+    <button data-screen="history"><span class="nav-icon">🗓️</span>History</button>
+    <button data-screen="dashboard"><span class="nav-icon">📈</span>Charts</button>
+    <button data-screen="settings"><span class="nav-icon">⚙️</span>Settings</button>
+  </div>
+</nav>
+
+<script>
+const STORE_KEY = "bipolarMoodManagerDataV1";
+const DEFAULT_TAGS = ["Stress","Period","Alcohol","Illness","Travel","Conflict","Caffeine","Poor sleep","Exercise","Social activity","Work/school stress","Medication change","Missed meal","Major event"];
+let data = loadData();
+let selectedTags = new Set();
+let medTaken = {};
+let currentRange = 7;
+let charts = {};
+
+function defaultData(){ return {entries:{}, medications:[], tags:DEFAULT_TAGS}; }
+function loadData(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(!raw) return defaultData();
+    const d=JSON.parse(raw);
+    d.entries ||= {};
+    d.medications ||= [];
+    d.tags ||= DEFAULT_TAGS;
+    return d;
+  }catch(e){ return defaultData(); }
+}
+function persist(){ localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+function todayISO(){
+  const d=new Date(); const off=d.getTimezoneOffset(); return new Date(d.getTime()-off*60000).toISOString().slice(0,10);
+}
+function sleepHours(bed,wake){
+  if(!bed||!wake) return null;
+  const [bh,bm]=bed.split(":").map(Number), [wh,wm]=wake.split(":").map(Number);
+  let b=bh*60+bm, w=wh*60+wm;
+  if(w<=b) w+=1440;
+  return (w-b)/60;
+}
+function timeToHour(t){
+  if(!t) return null;
+  const [h,m]=t.split(":").map(Number);
+  return h + m/60;
+}
+function formatHours(v){
+  if(v==null) return "—";
+  const h=Math.floor(v), m=Math.round((v-h)*60);
+  return `${h}h ${m}m`;
+}
+function moodColor(v){
+  if(v < -3) return "#c98fa6";
+  if(v > 3) return "#e5a37f";
+  return "#9bbca9";
+}
+function setScreen(name){
+  document.querySelectorAll(".screen").forEach(x=>x.classList.toggle("active",x.id===name));
+  document.querySelectorAll(".nav button").forEach(x=>x.classList.toggle("active",x.dataset.screen===name));
+  if(name==="history") renderHistory();
+  if(name==="dashboard") renderCharts();
+  if(name==="settings") renderMedList();
+}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>setScreen(b.dataset.screen));
+
+function renderTags(){
+  const wrap=document.getElementById("tagWrap"); wrap.innerHTML="";
+  data.tags.forEach(tag=>{
+    const b=document.createElement("button");
+    b.className="tag"+(selectedTags.has(tag)?" selected":"");
+    b.textContent=tag;
+    b.onclick=()=>{ selectedTags.has(tag)?selectedTags.delete(tag):selectedTags.add(tag); renderTags(); };
+    wrap.appendChild(b);
+  });
+}
+function renderMedicationToggles(){
+  const box=document.getElementById("medicationToggles"); box.innerHTML="";
+  document.getElementById("noMedsNote").style.display=data.medications.length?"none":"block";
+  data.medications.forEach((m,i)=>{
+    const row=document.createElement("div"); row.className="card"; row.style.padding="10px"; row.style.boxShadow="none";
+    row.innerHTML=`<div class="row between"><div><strong>${escapeHtml(m.name)}</strong><div class="muted small">${escapeHtml(m.dose||"")}</div></div>
+      <div class="toggle-row" style="width:180px">
+        <button class="btn ${medTaken[i]===true?'btn-primary':'btn-secondary'}">Taken</button>
+        <button class="btn ${medTaken[i]===false?'btn-primary':'btn-secondary'}">Not taken</button>
+      </div></div>`;
+    const btns=row.querySelectorAll("button");
+    btns[0].onclick=()=>{medTaken[i]=true; renderMedicationToggles();};
+    btns[1].onclick=()=>{medTaken[i]=false; renderMedicationToggles();};
+    box.appendChild(row);
+  });
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+
+function updateSleep(){
+  const v=sleepHours(bedtime.value,wakeTime.value);
+  sleepDisplay.innerHTML=v==null?'<strong>—</strong><span class="muted small">Enter bedtime and wake time</span>':`<strong>${formatHours(v)}</strong><span class="muted small">${v.toFixed(2)} hours</span>`;
+}
+bedtime.oninput=updateSleep; wakeTime.oninput=updateSleep;
+depression.oninput=()=>depVal.textContent=depression.value;
+mania.oninput=()=>maniaVal.textContent=mania.value;
+mood.oninput=()=>moodVal.textContent=(+mood.value>0?"+":"")+mood.value;
+
+function resetForm(date=todayISO()){
+  entryDate.value=date; bedtime.value=""; wakeTime.value=""; depression.value=0; mania.value=0; mood.value=0; notes.value="";
+  selectedTags=new Set(); medTaken={};
+  depVal.textContent="0"; maniaVal.textContent="0"; moodVal.textContent="0";
+  updateSleep(); renderTags(); renderMedicationToggles();
+  deleteEntry.style.display="none";
+}
+function loadEntry(date){
+  const e=data.entries[date];
+  if(!e){ resetForm(date); return; }
+  entryDate.value=date; bedtime.value=e.bedtime||""; wakeTime.value=e.wakeTime||"";
+  depression.value=e.depression??0; mania.value=e.mania??0; mood.value=e.mood??0; notes.value=e.notes||"";
+  selectedTags=new Set(e.tags||[]);
+  medTaken={...(e.medicationTaken||{})};
+  depVal.textContent=depression.value; maniaVal.textContent=mania.value; moodVal.textContent=(+mood.value>0?"+":"")+mood.value;
+  updateSleep(); renderTags(); renderMedicationToggles(); deleteEntry.style.display="block";
+}
+entryDate.onchange=()=>loadEntry(entryDate.value);
+
+saveEntry.onclick=()=>{
+  const date=entryDate.value || todayISO();
+  const hrs=sleepHours(bedtime.value,wakeTime.value);
+  data.entries[date]={
+    date, bedtime:bedtime.value, wakeTime:wakeTime.value, sleepHours:hrs,
+    depression:+depression.value, mania:+mania.value, mood:+mood.value,
+    medicationTaken:{...medTaken}, tags:[...selectedTags], notes:notes.value.trim()
+  };
+  persist(); deleteEntry.style.display="block";
+  alert("Entry saved.");
+};
+deleteEntry.onclick=()=>{
+  const date=entryDate.value;
+  if(data.entries[date] && confirm(`Delete the entry for ${date}?`)){
+    delete data.entries[date]; persist(); resetForm(date); renderHistory();
+  }
+};
+
+function renderHistory(){
+  const box=document.getElementById("historyList");
+  const arr=Object.values(data.entries).sort((a,b)=>b.date.localeCompare(a.date));
+  if(!arr.length){ box.innerHTML='<div class="empty">No entries yet.</div>'; return; }
+  box.innerHTML="";
+  arr.forEach(e=>{
+    const div=document.createElement("div"); div.className="history-item";
+    const slept=e.sleepHours==null?"—":formatHours(e.sleepHours);
+    div.innerHTML=`<div><strong><span class="mood-dot" style="background:${moodColor(e.mood)}"></span>${e.date}</strong>
+      <div class="muted small">Mood ${e.mood>0?"+":""}${e.mood} · Depression ${e.depression} · Mania ${e.mania} · Sleep ${slept}</div></div><span>›</span>`;
+    div.onclick=()=>{loadEntry(e.date); setScreen("today");};
+    box.appendChild(div);
+  });
+}
+
+function renderMedList(){
+  const box=document.getElementById("medList"); box.innerHTML="";
+  if(!data.medications.length){ box.innerHTML='<div class="empty">No saved medications yet.</div>'; return; }
+  data.medications.forEach((m,i)=>{
+    const div=document.createElement("div"); div.className="med-item";
+    div.innerHTML=`<div><strong>${escapeHtml(m.name)}</strong><div class="muted small">${escapeHtml(m.dose||"")}</div></div>
+      <button class="btn btn-danger">Remove</button>`;
+    div.querySelector("button").onclick=()=>{ if(confirm("Remove this medication from future entries?")){data.medications.splice(i,1);persist();renderMedList();renderMedicationToggles();}};
+    box.appendChild(div);
+  });
+}
+addMedication.onclick=()=>{
+  const name=medName.value.trim(), dose=medDose.value.trim();
+  if(!name){alert("Enter a medication name.");return;}
+  data.medications.push({name,dose}); persist(); medName.value=""; medDose.value=""; renderMedList(); renderMedicationToggles();
+};
+
+function filteredEntries(){
+  let arr=Object.values(data.entries).sort((a,b)=>a.date.localeCompare(b.date));
+  if(currentRange==="all") return arr;
+  const cutoff=new Date(); cutoff.setHours(0,0,0,0); cutoff.setDate(cutoff.getDate()-Number(currentRange)+1);
+  return arr.filter(e=>new Date(e.date+"T00:00:00")>=cutoff);
+}
+function baseOptions(title, min=null, max=null){
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:true,labels:{usePointStyle:true,boxWidth:8}},tooltip:{mode:"index",intersect:false}},
+    scales:{
+      x:{grid:{display:false}},
+      y:{beginAtZero:false, suggestedMin:min, suggestedMax:max, grid:{color:"#f4e3e9"}}
+    }
+  };
+}
+function makeChart(id, datasets, opts={}){
+  if(charts[id]) charts[id].destroy();
+  const labels=filteredEntries().map(e=>e.date.slice(5));
+  charts[id]=new Chart(document.getElementById(id),{type:"line",data:{labels,datasets},options:opts});
+}
+function renderCharts(){
+  const e=filteredEntries();
+  const labels=e.map(x=>x.date.slice(5));
+  const common=(label, vals)=>({label,data:vals,tension:.28,pointRadius:3,borderWidth:2,fill:false});
+  if(charts.overallChart) charts.overallChart.destroy();
+  charts.overallChart=new Chart(overallChart,{type:"line",data:{labels,datasets:[
+    common("Mood",e.map(x=>x.mood)), common("Depression",e.map(x=>x.depression)), common("Mania",e.map(x=>x.mania)),
+    common("Sleep hours",e.map(x=>x.sleepHours))
+  ]},options:baseOptions()});
+  makeChart("moodChart",[common("Overall mood",e.map(x=>x.mood))],baseOptions("",-10,10));
+  makeChart("depressionChart",[common("Depression",e.map(x=>x.depression))],baseOptions("",0,10));
+  makeChart("maniaChart",[common("Hypomania / Mania",e.map(x=>x.mania))],baseOptions("",0,10));
+  makeChart("sleepChart",[common("Hours slept",e.map(x=>x.sleepHours))],baseOptions("",0,12));
+  makeChart("bedtimeChart",[common("Bedtime",e.map(x=>timeToHour(x.bedtime)))],baseOptions("",0,24));
+  makeChart("wakeChart",[common("Wake time",e.map(x=>timeToHour(x.wakeTime)))],baseOptions("",0,24));
+  const medRates=e.map(x=>{
+    const vals=Object.values(x.medicationTaken||{});
+    if(!vals.length) return null;
+    return Math.round(vals.filter(v=>v===true).length/vals.length*100);
+  });
+  makeChart("medChart",[common("Medication taken (%)",medRates)],baseOptions("",0,100));
+}
+document.querySelectorAll("#rangeTabs button").forEach(b=>b.onclick=()=>{
+  currentRange=b.dataset.range==="all"?"all":Number(b.dataset.range);
+  document.querySelectorAll("#rangeTabs button").forEach(x=>x.classList.toggle("active",x===b));
+  renderCharts();
+});
+
+function download(name,text,type){
+  const blob=new Blob([text],{type}); const url=URL.createObjectURL(blob); const a=document.createElement("a");
+  a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),500);
+}
+exportJson.onclick=()=>download(`mood-manager-backup-${todayISO()}.json`,JSON.stringify(data,null,2),"application/json");
+exportCsv.onclick=()=>{
+  const meds=data.medications.map(m=>m.name+(m.dose?` ${m.dose}`:""));
+  const head=["date","bedtime","wake_time","sleep_hours","depression_0_10","mania_0_10","overall_mood_-10_10","medications_taken","tags","notes"];
+  const rows=Object.values(data.entries).sort((a,b)=>a.date.localeCompare(b.date)).map(e=>{
+    const mt=meds.map((m,i)=>`${m}: ${e.medicationTaken?.[i]===true?"taken":e.medicationTaken?.[i]===false?"not taken":"not recorded"}`).join("; ");
+    return [e.date,e.bedtime,e.wakeTime,e.sleepHours??"",e.depression,e.mania,e.mood,mt,(e.tags||[]).join("; "),e.notes||""];
+  });
+  const esc=v=>`"${String(v??"").replaceAll('"','""')}"`;
+  download(`mood-manager-data-${todayISO()}.csv`,[head,...rows].map(r=>r.map(esc).join(",")).join("\n"),"text/csv");
+};
+importJson.onchange=async(ev)=>{
+  const f=ev.target.files[0]; if(!f)return;
+  try{
+    const d=JSON.parse(await f.text());
+    if(!d.entries||!Array.isArray(d.medications)) throw new Error();
+    if(confirm("Import this backup? It will replace the data currently stored in this app.")){
+      data=d; persist(); renderMedList(); resetForm(todayISO()); renderHistory(); alert("Backup imported.");
+    }
+  }catch(e){alert("That file does not look like a valid Mood Manager backup.");}
+  ev.target.value="";
+};
+
+resetForm(todayISO());
+</script>
+</body>
+</html>
